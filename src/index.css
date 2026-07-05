@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+@theme {
+  --color-finnio-sidebar: #939BAA;
+  --color-finnio-main: #FFFFFF;
+  --color-finnio-card-1: #C4CDDD;
+  --color-finnio-card-2: #B2C1DA;
+  --color-finnio-card-3: #CFDEF7;
+  --color-finnio-ai-chat: #C4CDDD;
+  --color-finnio-header: #ACB6C6;
+}
