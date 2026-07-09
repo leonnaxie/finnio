@@ -1,4 +1,5 @@
 import { useState } from "react"
+import CategoryModal from "./CategoryModal"
 
 interface Category {
     id: number
@@ -35,6 +36,26 @@ function Categories() {
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(mockCategories[0])
     const currentMonth = new Date().toLocaleString('default', { month: 'long' })
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+
+    const [showModal, setShowModal] = useState(false)
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+
+    const handleSaveCategory = (category: Category) => {
+        if (editingCategory) {
+            setCategories(prev => prev.map(c => c.id === category.id ? category: c)) 
+        } else {
+            setCategories(prev => [...prev, category])
+        }
+        setShowModal(false)
+        setEditingCategory(null)
+    }
+
+    const handleDeleteCategory = (id: number) => {
+        setCategories(prev => prev.filter(c => c.id !== id))
+        if (selectedCategory?.id === id) {
+            setSelectedCategory(null)
+        }
+    }
     
     const filteredTransactions = mockTransactions.filter(
         tx => tx.categoryId === selectedCategory?.id
@@ -75,21 +96,44 @@ function Categories() {
                     </div>
 
                     {/* Right category List */}
-                    <div className="w-56 g-finnio-card-1 rounded-xl p-4 flex flex-col gap-2">
+                    <div className="w-56 bg-finnio-card-1 rounded-xl p-4 flex flex-col gap-2">
                         <h3 className="font-semibold mb-2">Category List</h3>
                         {categories.map(cat => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setSelectedCategory(cat)}
-                                className={`flex items-center gap-2 p-2 rounded-lg text-left w-full text-white transition-all ${
-                                    selectedCategory?.id === cat.id ? 'bg-finnio-card-3' : 'bg-finnio-card-1 hover:bg-finnio-card-3'
-                                }`}>
-                                    <span style={{ color: cat.color }}>★</span>
-                                    <span className="flex-1 text-sm">{cat.name}</span>
-                                    <span className="flex-1 text-sm">${cat.spent}</span>
+                            <div key={cat.id} className="relative group">
+                                <button
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`flex items-center gap-2 p-2 rounded-lg text-left w-full text-gray-100 transition-all border border-finnio-card-2 ${
+                                        selectedCategory?.id === cat.id ? 'bg-finnio-card-2' : 'bg-finnio-card-1 hover:bg-finnio-card-2'
+                                    }`}>
+                                        <span style={{ color: cat.color }}>★</span>
+                                        <span className="flex-1 text-sm">{cat.name}</span>
+                                        <span className="flex-1 opacity-70">${cat.spent}</span>
                                 </button>
+
+                                <button
+                                    onClick={() => {
+                                        setEditingCategory(cat)
+                                        setShowModal(true)
+                                    }}
+                                    className="absolute top-1 right-1 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs">
+                                        ✎
+                                </button>
+
+                                <button 
+                                    onClick={() => {
+                                        handleDeleteCategory(cat.id)
+                                    }}
+                                    className="absolute top-1 right-6 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs">
+                                        ✕
+                                    </button>
+                            </div>
                         ))}
-                        <button className="text-sm text-gray-400 hover:text-white mt-2">+ Add</button>
+                        <button 
+                            onClick={() => {
+                                setEditingCategory(null)
+                                setShowModal(true)
+                            }}
+                            className="text-sm text-gray-400 hover:text-white mt-2">+ Add</button>
                     </div>
                 </div>
 
@@ -126,6 +170,19 @@ function Categories() {
                     </div>
                 )}
             </div>
+
+            
+            {/* Modal */}
+            {showModal && (
+                <CategoryModal
+                    onClose={() => {
+                        setShowModal(false)
+                        setEditingCategory(null)
+                    }}
+                    onSave={handleSaveCategory}
+                    existingCategory={editingCategory}
+                />
+            )}
         </div>
     )
 }
