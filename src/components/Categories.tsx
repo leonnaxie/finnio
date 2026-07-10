@@ -1,5 +1,6 @@
 import { useState } from "react"
 import CategoryModal from "./CategoryModal"
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 interface Category {
     id: number
@@ -91,7 +92,38 @@ function Categories() {
                         </div>
 
                         <div className="flex-1 flex items-center justify-center">
-                            <p className="opacity-50">Chart coming soon...</p>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={categories}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius="55%"
+                                        outerRadius="75%"
+                                        paddingAngle={3}
+                                        dataKey="spent"
+                                        nameKey="name"
+                                    >
+                                        {categories.map(cat => (
+                                            <Cell key={cat.id} fill={cat.color}></Cell>
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        formatter={(value: unknown) => [`$${(value as number).toFixed(2)}`, 'Spent']}
+                                        contentStyle={{
+                                            backgroundColor: '#6b7a99',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                        }}>  
+                                    </Tooltip>
+                                    <Legend
+                                        formatter={(value) => (
+                                            <span style={{ fontSize: '12px', color: 'white'}}>{value}</span>
+                                        )}
+                                    ></Legend>
+                                </PieChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
 
