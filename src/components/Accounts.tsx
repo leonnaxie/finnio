@@ -42,7 +42,6 @@ function Accounts() {
         <div className="flex h-screen">
 
             <div className="flex-1 p-6 overflow-y-auto">
-                <h2 className="text-xl mb-6">accounts</h2>
 
                 <div className="flex gap-4 h-full">
 
