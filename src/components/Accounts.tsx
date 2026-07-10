@@ -1,38 +1,19 @@
 import { useState } from "react"
 import AccountModal from "./AccountModal"
+import type { Account, Transaction } from "../App"
 
-interface Account {
-    id: number
-    name: string
-    type: 'Checkings' | 'Savings' | 'Credit Card'
-    balance: number
+interface Props {
+    accounts: Account[]
+    setAccounts: React.Dispatch<React.SetStateAction<Account[]>>
+    transactions: Transaction[]
 }
 
-interface Transaction {
-    name: string
-    amount: number
-    date: string
-}
-
-const mockAccounts: Account[] = [
-    { id: 1, name: 'Chase Checkings', type: 'Checkings', balance: 3240.50 },
-    { id: 2, name: 'Chase Savings', type: 'Savings', balance: 8500.40 },
-    { id: 3, name: 'Visa Card', type: 'Credit Card', balance: -1200.00 }
-]
-
-const mockTransactions: Transaction[] = [
-    { name: 'Walmart', amount: 87.34, date: 'Jul 2'},
-    { name: 'Netflix', amount: 16.99, date: 'Jul 7'},
-    { name: 'Direct Deposit', amount: 1200.00, date: 'Jul 1'}
-]
-
-function Accounts() {
-    const [accounts, setAccounts] = useState<Account[]>(mockAccounts)
-    const [selectedAmount, setSelectedAmount] = useState<Account | null>(mockAccounts[0])
+function Accounts({ accounts, setAccounts, transactions}: Props) {
+    const [selectedAmount, setSelectedAmount] = useState<Account | null>(accounts[0])
     const [showModal, setShowModal] = useState(false)
 
     const handleDelete = (id: number) => {
-        setAccounts(prev => prev.filter(account => account.id !== id))
+        setAccounts(prev => prev.filter(accounts => accounts.id !== id))
         if (selectedAmount?.id === id) {
             setSelectedAmount(null)
         }
@@ -91,7 +72,7 @@ function Accounts() {
                                 <div className="bg-finnio-card-2 rounded-xl p-4 flex-1">
                                     <h4 className="font-semibold mb-3">Recent Transactions</h4>
                                     <div className="flex flex-col gap-2">
-                                        {mockTransactions.map((tx, i) => (
+                                        {transactions.map((tx, i) => (
                                             <div key={i} className="flex justify-between items-center py-2 border-b border-white/10">
                                                 <div>
                                                     <p className="text-sm font-medium">{tx.name}</p>

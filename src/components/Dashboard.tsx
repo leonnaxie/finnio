@@ -1,6 +1,15 @@
 import ChatPanel from "./chat/ChatPanel"
+import type { Account, FinancialProfile, Category, Transaction } from "../App"
 
-function Dashboard() {
+interface Props {
+    accounts: Account[]
+    categories: Category[]
+    transactions: Transaction[]
+    financialProfile: FinancialProfile
+}
+
+
+function Dashboard(_props : Props) {
     return (
         <div className="flex gap-6 h-full">
 

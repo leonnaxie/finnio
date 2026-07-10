@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { FinancialProfile } from '../App'
 
 interface UserProfile {
     name: string
@@ -7,24 +8,17 @@ interface UserProfile {
     dateFormat: string
 }
 
-interface FinancialProfile {
-    monthlyIncome: string
-    riskTolerance: 'Conservative' | 'Moderate' | 'Aggressive'
-    savingsTarget: string
+interface Props {
+    financialProfile: FinancialProfile
+    setFinancialProfile: React.Dispatch<React.SetStateAction<FinancialProfile>>
 }
 
-function Profile() {
+function Profile({ financialProfile, setFinancialProfile }: Props) {
     const [userProfile, setUserProfile] = useState<UserProfile>({
         name: 'Your Name',
         email: 'your@gmail.com',
         currency: 'USD',
         dateFormat: 'MM/DD/YYYY'
-    })
-
-    const [financialProfile, setFinancialProfile] = useState<FinancialProfile>({
-        monthlyIncome: '',
-        riskTolerance: 'Moderate',
-        savingsTarget: ''
     })
 
     const [isEditingProfile, setIsEditingProfile] = useState(false)

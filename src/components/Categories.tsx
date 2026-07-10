@@ -1,40 +1,15 @@
 import { useState } from "react"
 import CategoryModal from "./CategoryModal"
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import type { Category, Transaction } from "../App"
 
-interface Category {
-    id: number
-    name: string
-    color: string
-    budget: number
-    spent: number
+interface Props {
+    categories: Category[]
+    setCategories: React.Dispatch<React.SetStateAction<Category[]>>
+    transactions: Transaction[]
 }
-
-interface Transaction {
-    name: string
-    amount: number
-    date: string
-    categoryId: number
-}
-
-const mockCategories: Category[] = [
-    { id: 1, name: 'Food', color: '#4ade80', budget: 400, spent: 340 },
-    { id: 2, name: 'Rent', color: '#60a5fa', budget: 1200, spent: 1200 },
-    { id: 3, name: 'Transport', color: '#c084fc', budget: 200, spent: 145 },
-    { id: 4, name: 'Shopping', color: '#facc15', budget: 300, spent: 210 },
-    { id: 5, name: 'Subscriptions', color: '#f87171', budget: 100, spent: 82}
-]
-
-const mockTransactions: Transaction[] = [
-    { name: 'Publix', amount: 87.43, date: 'Jul 3', categoryId: 1},
-    { name: 'Hulu', amount: 15.99, date: 'June 30', categoryId: 5},
-    { name: 'Chipotle', amount: 13.50, date: 'Jul 8', categoryId: 1},
-    { name: 'Shell', amount: 45.20, date: 'Jul 4', categoryId: 3},
-]
-
-function Categories() {
-    const [categories, setCategories] = useState<Category[]>(mockCategories)
-    const [selectedCategory, setSelectedCategory] = useState<Category | null>(mockCategories[0])
+function Categories({ categories, setCategories, transactions}: Props) {
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(categories[0])
     const currentMonth = new Date().toLocaleString('default', { month: 'long' })
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
@@ -58,7 +33,7 @@ function Categories() {
         }
     }
     
-    const filteredTransactions = mockTransactions.filter(
+    const filteredTransactions = transactions.filter(
         tx => tx.categoryId === selectedCategory?.id
     )
 
