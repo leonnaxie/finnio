@@ -1,11 +1,19 @@
 import { useState } from "react";
+import type { Account, FinancialProfile, Category, Transaction } from "../../App"
 
 interface Message {
     role: 'user' | 'assistant'
     content: string
 }
 
-function ChatPanel() {
+interface Props {
+    accounts: Account[]
+    categories: Category[]
+    transactions: Transaction[]
+    financialProfile: FinancialProfile
+}
+
+function ChatPanel({ accounts, categories, transactions, financialProfile }: Props) {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
@@ -15,6 +23,59 @@ function ChatPanel() {
 
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+
+    const buildSystemPrompt = () => {
+        const totalSpent = categories.reduce((sum, c) => sum + c.spent, 0)
+        const totalBudget = categories.reduce((sum, c) => sum + c.budget, 0)
+        const totalAssets = accounts
+            .filter(a => a.balance > 0)
+            .reduce((sum, a) => sum + a.balance, 0)
+        const totalDebt = accounts
+            .filter(a => a.balance < 0)
+            .reduce((sum, a) => sum + Math.abs(a.balance), 0)
+
+        return `
+            You are Finnio, a friendly AI financial education assistant built into a personal finance dashboard. You have access to the user's real financial data below.
+            Always phrase advice as possibilites to consider, never as direct commands.
+            Keep responses concise and conversational, at best 2-3 sentences max unless the user asks for more details.
+            Never make specific investment recommendations.
+            Always remind the user to consult a licensed financial advisor for major financial decisions.
+
+            ==USER FINANCIAL PROFILE==
+            Monthly Income: ${financialProfile.monthlyIncome ? `$${financialProfile.monthlyIncome}` : 'Not set'}
+            Risk Tolerance: ${financialProfile.riskTolerance}
+            Monthly Savings Target: ${financialProfile.savingsTarget ? `$${financialProfile.savingsTarget}` : 'Not set'}
+
+            ==ACCOUNTS==
+            ${accounts.length > 0
+                ? accounts.map(a =>
+                    `- ${a.name} (${a.type}): ${a.balance < 0 ? '-' : ''}$${Math.abs(a.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+                ).join('\n') : "No accounts added yet"
+            }
+
+            Total Assets: $${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            Total Debt: $${totalDebt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            Net Worth: $${(totalAssets - totalDebt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2})}
+
+            ==SPENDING THIS MONTH==
+            ${categories.length > 0
+                ? categories.map(c =>
+                    `- ${c.name}: $${c.spent} spent of $${c.budget} budget (${Math.round((c.spent / c.budget) * 100)}%)`
+                ).join('\n')
+                : "No categories added yet"
+            }
+
+            Total Spent: $${totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2})} of $${totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2})} total budget
+
+            ==RECENT TRANSACTIONS==
+            ${transactions.length > 0
+                ? transactions.slice(0, 10).map(tx =>
+                    `- ${tx.name}: $${tx.amount} on ${tx.date}`
+                ).join('\n')
+                : "No transactions added yet"
+            }
+            `
+    }
 
     const sendMessage = async () => {
         if (!input.trim() || isLoading) return
@@ -38,7 +99,7 @@ function ChatPanel() {
                     body: JSON.stringify({
                         system_instruction: {
                             parts: [{
-                                text: `You are Finnio, a friendly AI financial educational assistant. Give conversational, helpful insights about personal finance that the user asks about. Always phrase advice as possibilities to consider, never as direct commands. Keep responses concise and easy to read. End responses with a reminder to always consult a professional for major decisions.`
+                                text: buildSystemPrompt()
                             }]
                         },
                     contents: [

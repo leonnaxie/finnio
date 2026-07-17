@@ -1,6 +1,5 @@
 import ChatPanel from "./chat/ChatPanel"
 import type { Account, FinancialProfile, Category, Transaction } from "../App"
-import Accounts from "./Accounts"
 
 interface Props {
     accounts: Account[]
@@ -185,7 +184,11 @@ function Dashboard({ accounts, categories, transactions, financialProfile }: Pro
                 </div>
             </div>
 
-            <ChatPanel />
+            <ChatPanel
+                accounts={accounts}
+                categories={categories}
+                transactions={transactions}
+                financialProfile={financialProfile} />
         </div>
     )
 }
