@@ -17,7 +17,7 @@ function Sidebar({ onLogout }: Props ) {
 
             <div className="flex flex-col gap-4">
                 <Link to="/profile" className="hover:text-blue-400">Profile</Link>
-                <button onClick={onLogout} text-left className="hover:text-red:400">Log Out</button>
+                <button onClick={onLogout} className="hover:text-red:400 text-left">Log Out</button>
             </div>
         </aside>
     )
