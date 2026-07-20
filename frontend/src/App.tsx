@@ -4,9 +4,11 @@ import Accounts from './components/Accounts'
 import Categories from './components/Categories'
 import Profile from './components/Profile'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
+import { supabase } from './lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 export interface Account {
   id: number
@@ -59,7 +61,23 @@ const initialTransactions: Transaction[] = [
 
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts)
   const [categories, setCategories] = useState<Category[]>(initialCategories)
@@ -70,11 +88,17 @@ function App() {
     savingsTarget: ''
   })
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <BrowserRouter>
-    { isLoggedIn ? (
+    { session ? (
       <div className="flex h-screen text-white overflow-hidden">
-        <Sidebar onLogout={() => setIsLoggedIn(false)} />
+        <Sidebar onLogout={ async () => 
+          await supabase.auth.signOut().then(() => setSession(null))
+        } />
           <main className="flex-1 overflow-y-auto">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -101,8 +125,8 @@ function App() {
       </div>
     ) : (
       <Routes>
-        <Route path="/" element={<SignIn onLogin={() => setIsLoggedIn(true)} />} />
-        <Route path="/signup" element={<SignUp onLogin={() => setIsLoggedIn(true)} />} />
+        <Route path="/" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     )}

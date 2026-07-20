@@ -1,20 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 
-interface Props {
-    onLogin: () => void
-}
 
-function SignUp({ onLogin }: Props) {
+function SignUp() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const navigate = useNavigate()
 
-    const handleSignUp = () => {
-        if (email && password) {
-            onLogin()
-        }
-    }
+    const handleSignUp = async () => {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+    
+            if (error) {
+                alert(error.message);
+                return;
+            }
+        };
+
+    const handleGoogleSignUp = async () => {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+    
+            if (error) {
+                alert(error.message);
+            }
+        };
 
     return (
         <div className="min-h-screen bg-finnio-sidebar flex flex-col items-center justify-center">
@@ -48,10 +62,12 @@ function SignUp({ onLogin }: Props) {
                 <button
                     onClick={handleSignUp}
                     className="w-full py-2 text-white bg-finnio-card-2 rounded-lg text-sm font-semibold hover:bg-gray-500 transition-all">
-                        Sign In
+                        Sign Up
                 </button>
 
-                <button className="w-full py-2 text-white bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+                <button 
+                    onClick={handleGoogleSignUp}
+                    className="w-full py-2 text-white bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-all flex items-center justify-center gap-2">
                     <span>G</span> Continue with Google
                 </button>
 
