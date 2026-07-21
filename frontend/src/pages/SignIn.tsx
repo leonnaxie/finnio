@@ -18,6 +18,7 @@ function SignIn() {
             alert(error.message);
             return;
         }
+        
     };
 
     const handleGoogleSignIn = async () => {

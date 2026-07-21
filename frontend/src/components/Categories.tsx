@@ -1,6 +1,7 @@
 import { useState } from "react"
 import CategoryModal from "./CategoryModal"
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { supabase } from "../lib/supabase"
 import type { Category, Transaction } from "../App"
 
 interface Props {
@@ -8,31 +9,83 @@ interface Props {
     setCategories: React.Dispatch<React.SetStateAction<Category[]>>
     transactions: Transaction[]
 }
-function Categories({ categories, setCategories, transactions}: Props) {
-    const [selectedCategory, setSelectedCategory] = useState<Category | null>(categories[0])
+
+interface CategoryInput {
+    id?: string
+    name: string
+    color: string
+    budget: number
+}
+
+function Categories({ categories, setCategories, transactions }: Props) {
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(categories[0] ?? null)
     const currentMonth = new Date().toLocaleString('default', { month: 'long' })
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
     const [showModal, setShowModal] = useState(false)
     const [editingCategory, setEditingCategory] = useState<Category | null>(null)
 
-    const handleSaveCategory = (category: Category) => {
-        if (editingCategory) {
-            setCategories(prev => prev.map(c => c.id === category.id ? category: c)) 
+    const handleSaveCategory = async (category: CategoryInput) => {
+        if (category.id) {
+            // Editing an existing category
+            const { data, error } = await supabase
+                .from('categories')
+                .update({
+                    name: category.name,
+                    color: category.color,
+                    budget: category.budget
+                })
+                .eq('id', category.id)
+                .select()
+                .single()
+
+            if (error) {
+                alert(error.message)
+                return
+            }
+
+            setCategories(prev => prev.map(c => c.id === data.id ? data : c))
         } else {
-            setCategories(prev => [...prev, category])
+            // Creating a new category
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data, error } = await supabase
+                .from('categories')
+                .insert({
+                    name: category.name,
+                    color: category.color,
+                    budget: category.budget,
+                    spent: 0,
+                    user_id: user.id
+                })
+                .select()
+                .single()
+
+            if (error) {
+                alert(error.message)
+                return
+            }
+
+            setCategories(prev => [...prev, data])
         }
+
         setShowModal(false)
         setEditingCategory(null)
     }
 
-    const handleDeleteCategory = (id: number) => {
+    const handleDeleteCategory = async (id: string) => {
+        const { error } = await supabase.from('categories').delete().eq('id', id)
+        if (error) {
+            alert(error.message)
+            return
+        }
         setCategories(prev => prev.filter(c => c.id !== id))
         if (selectedCategory?.id === id) {
             setSelectedCategory(null)
         }
     }
-    
+
     const filteredTransactions = transactions.filter(
         tx => tx.categoryId === selectedCategory?.id
     )
@@ -41,10 +94,8 @@ function Categories({ categories, setCategories, transactions}: Props) {
         <div className="flex h-screen p-6 gap-4 overflow-hidden">
             <div className="flex-1 flex flex-col gap-4">
 
-                {/* Top Chart and Categories */}
                 <div className="flex gap-4 flex-1">
-                    
-                    {/* Left Chart */}
+
                     <div className="flex-1 bg-finnio-card-1 rounded-xl p-6 flex flex-col gap-4">
                         <div className="flex justify-between items-center">
                             <h2 className="text-lg font-semibold">This Month's Breakdown</h2>
@@ -90,11 +141,11 @@ function Categories({ categories, setCategories, transactions}: Props) {
                                             border: 'none',
                                             borderRadius: '8px',
                                             fontSize: '12px',
-                                        }}>  
+                                        }}>
                                     </Tooltip>
                                     <Legend
                                         formatter={(value) => (
-                                            <span style={{ fontSize: '12px', color: 'white'}}>{value}</span>
+                                            <span style={{ fontSize: '12px', color: 'white' }}>{value}</span>
                                         )}
                                     ></Legend>
                                 </PieChart>
@@ -102,7 +153,6 @@ function Categories({ categories, setCategories, transactions}: Props) {
                         </div>
                     </div>
 
-                    {/* Right category List */}
                     <div className="w-56 bg-finnio-card-1 rounded-xl p-4 flex flex-col gap-2">
                         <h3 className="font-semibold mb-2">Category List</h3>
                         {categories.map(cat => (
@@ -126,16 +176,14 @@ function Categories({ categories, setCategories, transactions}: Props) {
                                         ✎
                                 </button>
 
-                                <button 
-                                    onClick={() => {
-                                        handleDeleteCategory(cat.id)
-                                    }}
+                                <button
+                                    onClick={() => handleDeleteCategory(cat.id)}
                                     className="absolute top-1 right-6 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs">
                                         ✕
                                     </button>
                             </div>
                         ))}
-                        <button 
+                        <button
                             onClick={() => {
                                 setEditingCategory(null)
                                 setShowModal(true)
@@ -144,12 +192,10 @@ function Categories({ categories, setCategories, transactions}: Props) {
                     </div>
                 </div>
 
-                {/* Bottom Details */}
                 {selectedCategory && (
                     <div className="bg-finnio-card-1 rounded-xl p-4 h-48">
                         <h3 className="font-semibold mb-2">{selectedCategory.name} Details</h3>
 
-                        {/* Progress Bar */}
                         <div className="mb-3">
                             <div className="flex justify-between text-xs opacity-70 mb-1">
                                 <span>${selectedCategory.spent} spent</span>
@@ -165,21 +211,18 @@ function Categories({ categories, setCategories, transactions}: Props) {
                             </div>
                         </div>
 
-                        {/* Transactions List */}
                         <div className="flex flex-col gap-1">
-                            {filteredTransactions.map((tx, i) => (
-                                <div key={i} className="flex justify-between text-sm py-1 border-b border-white/10">
+                            {filteredTransactions.map(tx => (
+                                <div key={tx.id} className="flex justify-between text-sm py-1 border-b border-white/10">
                                     <span>{tx.name}</span>
                                     <span className="text-red-400">-${tx.amount}</span>
-                                </div>)
-                            )}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
             </div>
 
-            
-            {/* Modal */}
             {showModal && (
                 <CategoryModal
                     onClose={() => {

@@ -11,14 +11,14 @@ import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
 export interface Account {
-  id: number
+  id: string
   name: string
   type: 'Checkings' | 'Savings' | 'Credit Card'
   balance: number
 }
 
 export interface Category {
-  id: number
+  id: string
   name: string
   color: string
   budget: number
@@ -26,10 +26,11 @@ export interface Category {
 }
 
 export interface Transaction {
+  id: string
   name: string
   amount: number
   date: string
-  categoryId: number
+  categoryId: string
 }
 
 export interface FinancialProfile {
@@ -38,35 +39,22 @@ export interface FinancialProfile {
     savingsTarget: string
 }
 
-const initialAccounts: Account[] = [
-    { id: 1, name: 'Chase Checkings', type: 'Checkings', balance: 3240.50 },
-    { id: 2, name: 'Chase Savings', type: 'Savings', balance: 8500.40 },
-    { id: 3, name: 'Visa Card', type: 'Credit Card', balance: -1200.00 }
-]
-
-const initialCategories: Category[] = [
-    { id: 1, name: 'Food', color: '#4ade80', budget: 400, spent: 340 },
-    { id: 2, name: 'Rent', color: '#60a5fa', budget: 1200, spent: 1200 },
-    { id: 3, name: 'Transport', color: '#c084fc', budget: 200, spent: 145 },
-    { id: 4, name: 'Shopping', color: '#facc15', budget: 300, spent: 210 },
-    { id: 5, name: 'Subscriptions', color: '#f87171', budget: 100, spent: 82}
-]
-
-const initialTransactions: Transaction[] = [
-    { name: 'Publix', amount: 87.43, date: 'Jul 3', categoryId: 1},
-    { name: 'Hulu', amount: 15.99, date: 'June 30', categoryId: 5},
-    { name: 'Chipotle', amount: 13.50, date: 'Jul 8', categoryId: 1},
-    { name: 'Shell', amount: 45.20, date: 'Jul 4', categoryId: 3},
-]
-
-
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [financialProfile, setFinancialProfile] = useState<FinancialProfile>({
+    monthlyIncome: '',
+    riskTolerance: 'Moderate',
+    savingsTarget: ''
+  })
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
       setLoading(false);
     });
 
@@ -79,14 +67,68 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts)
-  const [categories, setCategories] = useState<Category[]>(initialCategories)
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
-  const [financialProfile, setFinancialProfile] = useState<FinancialProfile>({
-    monthlyIncome: '',
-    riskTolerance: 'Moderate',
-    savingsTarget: ''
-  })
+
+  useEffect(() => {
+    if (!session) return;
+
+    const fetchData = async () => {
+      const [
+        { data: accountsData, error: accountsError },
+        { data: categoriesData, error: categoriesError },
+        { data: transactionsData, error: transactionsError },
+        { data: profileData, error: profileError },
+      ] = await Promise.all([
+        supabase.from('accounts').select('*'),
+        supabase.from('categories').select('*'),
+        supabase.from('transactions').select('*'),
+        supabase.from('financial_profiles').select('*').single(),
+      ]);
+
+      if (accountsError) console.error('accounts fetch error:', accountsError);
+      if (categoriesError) console.error('categories fetch error:', categoriesError);
+      if (transactionsError) console.error('transactions fetch error:', transactionsError);
+      if (profileError) console.error('profile fetch error:', profileError);
+
+      if (accountsData) {
+        setAccounts(accountsData.map(a => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          balance: a.balance,
+        })));
+      }
+
+      if (categoriesData) {
+        setCategories(categoriesData.map(c => ({
+          id: c.id,
+          name: c.name,
+          color: c.color,
+          budget: c.budget,
+          spent: c.spent,
+        })));
+      }
+
+      if (transactionsData) {
+        setTransactions(transactionsData.map(t => ({
+          id: t.id,
+          name: t.name,
+          amount: t.amount,
+          date: t.date,
+          categoryId: t.category_id,
+        })));
+      }
+
+      if (profileData) {
+        setFinancialProfile({
+          monthlyIncome: String(profileData.monthly_income ?? ''),
+          riskTolerance: profileData.risk_tolerance ?? 'Moderate',
+          savingsTarget: String(profileData.savings_target ?? ''),
+        });
+      }
+    };
+
+    fetchData();
+  }, [session]);
 
   if (loading) {
     return <div>Loading...</div>;

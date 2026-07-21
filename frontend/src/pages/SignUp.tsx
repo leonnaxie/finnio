@@ -9,7 +9,7 @@ function SignUp() {
     const navigate = useNavigate()
 
     const handleSignUp = async () => {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signUp({
                 email,
                 password
             });
@@ -18,6 +18,9 @@ function SignUp() {
                 alert(error.message);
                 return;
             }
+
+            alert('Check your email to confirm your account.')
+            navigate('/')
         };
 
     const handleGoogleSignUp = async () => {
@@ -74,7 +77,7 @@ function SignUp() {
                 <p className="text-xs text-white text-center opacity-70">
                     Returning?{' '}
                     <button
-                        onClick={() => navigate('/signin')}
+                        onClick={() => navigate('/')}
                         className="underline hove:opacity-100">
                             Sign In
                     </button>

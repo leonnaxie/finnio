@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
+import type { Category } from "../App";
 
-interface Category {
-    id: number
+interface CategoryInput {
+    id?: string
     name: string
     color: string
     budget: number
-    spent: number
 }
 
 interface Props {
     onClose: () => void
-    onSave: (category: Category) => void
+    onSave: (category: CategoryInput) => void
     existingCategory?: Category | null
 }
 
@@ -42,11 +42,10 @@ function CategoryModal({ onClose, onSave, existingCategory}: Props) {
         if (!name.trim() || !budget) return
 
         onSave({
-            id: existingCategory?.id ?? Date.now(),
+            id: existingCategory?.id,
             name: name.trim(),
             color,
-            budget: parseFloat(budget),
-            spent: existingCategory?.spent ?? 0
+            budget: parseFloat(budget)
         })
     }
 

@@ -7,7 +7,7 @@ interface AccountEntry {
 
 interface Props {
     onClose: () => void
-    onSave: (accounts: any[]) => void
+    onSave: (accounts: { name: string; type: 'Checkings' | 'Savings' | 'Credit Card'; balance: number}[]) => void
 }
 
 
@@ -27,16 +27,14 @@ function AccountModal({ onClose, onSave }: Props) {
         const allAccounts = [
             ...checkingAccounts
             .filter(a => a.name)
-            .map((a, i) => ({
-                id: Date.now() + i,
+            .map((a) => ({
                 name: a.name,
-                type: 'Checking' as const,
+                type: 'Checkings' as const,
                 balance: parseFloat(a.balance) || 0
             })),
             ...creditAccounts
             .filter(a => a.name)
-            .map((a, i) => ({
-                id: Date.now() + 100 + i,
+            .map((a) => ({
                 name: a.name,
                 type: 'Credit Card' as const,
                 balance: -(parseFloat(a.balance) || 0)

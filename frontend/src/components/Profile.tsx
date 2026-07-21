@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import type { FinancialProfile } from '../App'
 
 interface UserProfile {
@@ -24,7 +25,24 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
     const [isEditingProfile, setIsEditingProfile] = useState(false)
     const [saved, setSaved] = useState(false)
 
-    const handleSaveFinancial = () => {
+    const handleSaveFinancial = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { error } = await supabase
+            .from('financial_profiles')
+            .update({
+                monthly_income: parseFloat(financialProfile.monthlyIncome) || 0,
+                risk_tolerance: financialProfile.riskTolerance,
+                savings_target: parseFloat(financialProfile.savingsTarget) || 0
+            })
+            .eq('user_id', user.id)
+
+        if (error) {
+            alert(error.message)
+            return
+        }
+
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
@@ -33,17 +51,13 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
         <div className="flex h-screen p-6 gap-4 overflow-hidden">
             <div className="flex-1 flex gap-4">
 
-                {/* User Info */}
                 <div className="flex-1 bg-finnio-card-1 rounded-xl p-6 flex flex-col gap-4">
-                    
-                    {/* Avatar */}
                     <div className="flex flex-col items-center gap-2 mb-2">
                         <div className="w-20 h-20 rounded-full bg-finnio-card-2 flex items-center justify-center text-3xl">
                             👤
                         </div>
                     </div>
 
-                    {/* Name */}
                     <div>
                         <label className="text-xs opacity-70 mb-1 block">Name</label>
                         {isEditingProfile ? (
@@ -57,7 +71,6 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                         )}
                     </div>
 
-                    {/* Email */}
                     <div>
                         <label className="text-xs opacity-70 mb-1 block">Email</label>
                         {isEditingProfile ? (
@@ -71,7 +84,6 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                         )}
                     </div>
 
-                    {/* Preferences */}
                     <div>
                         <h3 className="text-sm font-semibold mb-2 opacity-70">Preferences</h3>
 
@@ -105,7 +117,6 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                         </div>
                     </div>
 
-                    {/* Edit / Save button */}
                     <button
                         onClick={() => setIsEditingProfile(prev => !prev)}
                         className="mt-auto px-4 py-2 text-sm bg-finnio-card-2 rounded-lg hover:bg-gray-500 transition-all"
@@ -114,14 +125,12 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                     </button>
                 </div>
 
-                {/* Right — Financial Profile */}
                 <div className="flex-1 bg-finnio-card-1 rounded-xl p-6 flex flex-col gap-4">
                     <h3 className="font-semibold">Financial Profile</h3>
                     <p className="text-xs opacity-50">
                         This information helps Finnio give you personalized advice.
                     </p>
 
-                    {/* Monthly Income */}
                     <div>
                         <label className="text-xs opacity-70 mb-1 block">Monthly Income</label>
                         <div className="relative">
@@ -137,7 +146,6 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                         </div>
                     </div>
 
-                    {/* Risk Tolerance */}
                     <div>
                         <label className="text-xs opacity-70 mb-1 block">Risk Tolerance</label>
                         <div className="flex gap-2">
@@ -162,7 +170,6 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                         </p>
                     </div>
 
-                    {/* Savings Target */}
                     <div>
                         <label className="text-xs opacity-70 mb-1 block">Monthly Savings Target</label>
                         <div className="relative">
@@ -178,7 +185,6 @@ function Profile({ financialProfile, setFinancialProfile }: Props) {
                         </div>
                     </div>
 
-                    {/* Save button */}
                     <button
                         onClick={handleSaveFinancial}
                         className="mt-auto px-4 py-2 text-sm bg-finnio-card-2 rounded-lg hover:bg-gray-500 transition-all"
