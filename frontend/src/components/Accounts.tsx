@@ -1,17 +1,21 @@
 import { useState } from "react"
 import AccountModal from "./AccountModal"
 import { supabase } from "../lib/supabase"
-import type { Account, Transaction } from "../App"
+import type { Account, Category, Transaction } from "../App"
+import TransactionModal from "./TransactionModal"
 
 interface Props {
     accounts: Account[]
     setAccounts: React.Dispatch<React.SetStateAction<Account[]>>
     transactions: Transaction[]
+    categories: Category[]
+    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>
 }
 
-function Accounts({ accounts, setAccounts, transactions }: Props) {
+function Accounts({ accounts, setAccounts, categories, transactions, setTransactions }: Props) {
     const [selectedAmount, setSelectedAmount] = useState<Account | null>(accounts[0] ?? null)
     const [showModal, setShowModal] = useState(false)
+    const [showTxModal, setShowTxModal] = useState(false)
 
     const handleDelete = async (id: string) => {
         const { error } = await supabase.from('accounts').delete().eq('id', id)
@@ -46,6 +50,43 @@ function Accounts({ accounts, setAccounts, transactions }: Props) {
         }
         setShowModal(false)
     }
+
+    const handleSaveTransaction = async (tx: {
+        name: string; amount: number; date: string; categoryId: string; accountId: string;
+    }) => {
+        const { data: { user }} = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert({
+                name: tx.name,
+                amount: tx.amount,
+                date: tx.date,
+                category_id: tx.categoryId,
+                account_id: tx.accountId,
+                user_id: user.id
+            })
+            .select()
+            .single()
+        
+        if (error) {
+            alert(error.message)
+            return
+        }
+
+        setTransactions(prev => [...prev, {
+            id: data.id,
+            name: data.name,
+            amount: data.amount,
+            date: data.date,
+            categoryId: data.category_id,
+            accountId: data.account_id
+        }])
+        setShowTxModal(false)
+    }
+
+    const accountTransactions = transactions.filter(tx => tx.accountId === selectedAmount?.id)
 
     return (
         <div className="flex h-screen">
@@ -91,9 +132,15 @@ function Accounts({ accounts, setAccounts, transactions }: Props) {
                                 </div>
 
                                 <div className="bg-finnio-card-2 rounded-xl p-4 flex-1">
-                                    <h4 className="font-semibold mb-3">Recent Transactions</h4>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="font-semibold mb-3">Recent Transactions</h4>
+                                        <button 
+                                            onClick={() => setShowTxModal(true)}
+                                            className="text-xs text-gray-400 hover:text-white">+ Add Transaction</button>
+                                    </div>
+                                    
                                     <div className="flex flex-col gap-2">
-                                        {transactions.map((tx, i) => (
+                                        {accountTransactions.map((tx, i) => (
                                             <div key={i} className="flex justify-between items-center py-2 border-b border-white/10">
                                                 <div>
                                                     <p className="text-sm font-medium">{tx.name}</p>
@@ -116,6 +163,15 @@ function Accounts({ accounts, setAccounts, transactions }: Props) {
                 <AccountModal
                     onClose={() => setShowModal(false)}
                     onSave={handleSaveAccounts} />
+            )}
+
+            {showTxModal && (
+                <TransactionModal
+                    onClose={() => setShowTxModal(false)}
+                    onSave={handleSaveTransaction}
+                    accounts={accounts}
+                    categories={categories}
+                    defaultAccountId={selectedAmount?.id} />
             )}
         </div>
     )

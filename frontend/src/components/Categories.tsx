@@ -1,13 +1,16 @@
 import { useState } from "react"
 import CategoryModal from "./CategoryModal"
+import TransactionModal from "./TransactionModal"
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { supabase } from "../lib/supabase"
-import type { Category, Transaction } from "../App"
+import type { Account, Category, Transaction } from "../App"
 
 interface Props {
     categories: Category[]
     setCategories: React.Dispatch<React.SetStateAction<Category[]>>
+    accounts: Account[]
     transactions: Transaction[]
+    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>
 }
 
 interface CategoryInput {
@@ -17,17 +20,17 @@ interface CategoryInput {
     budget: number
 }
 
-function Categories({ categories, setCategories, transactions }: Props) {
+function Categories({ categories, setCategories, accounts, transactions, setTransactions }: Props) {
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(categories[0] ?? null)
     const currentMonth = new Date().toLocaleString('default', { month: 'long' })
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
     const [showModal, setShowModal] = useState(false)
     const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+    const [showTxModal, setShowTxModal] = useState(false)
 
     const handleSaveCategory = async (category: CategoryInput) => {
         if (category.id) {
-            // Editing an existing category
             const { data, error } = await supabase
                 .from('categories')
                 .update({
@@ -46,7 +49,6 @@ function Categories({ categories, setCategories, transactions }: Props) {
 
             setCategories(prev => prev.map(c => c.id === data.id ? data : c))
         } else {
-            // Creating a new category
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
@@ -84,6 +86,41 @@ function Categories({ categories, setCategories, transactions }: Props) {
         if (selectedCategory?.id === id) {
             setSelectedCategory(null)
         }
+    }
+
+    const handleSaveTransaction = async (tx: {
+        name: string; amount: number; date: string; categoryId: string; accountId: string
+    }) => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert({
+                name: tx.name,
+                amount: tx.amount,
+                date: tx.date,
+                category_id: tx.categoryId,
+                account_id: tx.accountId,
+                user_id: user.id
+            })
+            .select()
+            .single()
+
+        if (error) {
+            alert(error.message)
+            return
+        }
+
+        setTransactions(prev => [...prev, {
+            id: data.id,
+            name: data.name,
+            amount: data.amount,
+            date: data.date,
+            categoryId: data.category_id,
+            accountId: data.account_id
+        }])
+        setShowTxModal(false)
     }
 
     const filteredTransactions = transactions.filter(
@@ -194,7 +231,12 @@ function Categories({ categories, setCategories, transactions }: Props) {
 
                 {selectedCategory && (
                     <div className="bg-finnio-card-1 rounded-xl p-4 h-48">
-                        <h3 className="font-semibold mb-2">{selectedCategory.name} Details</h3>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-semibold">{selectedCategory.name} Details</h3>
+                            <button
+                                onClick={() => setShowTxModal(true)}
+                                className="text-xs text-gray-300 hover:text-white">+ Add Transaction</button>
+                        </div>
 
                         <div className="mb-3">
                             <div className="flex justify-between text-xs opacity-70 mb-1">
@@ -232,6 +274,15 @@ function Categories({ categories, setCategories, transactions }: Props) {
                     onSave={handleSaveCategory}
                     existingCategory={editingCategory}
                 />
+            )}
+
+            {showTxModal && (
+                <TransactionModal
+                    onClose={() => setShowTxModal(false)}
+                    onSave={handleSaveTransaction}
+                    accounts={accounts}
+                    categories={categories}
+                    defaultCategoryId={selectedCategory?.id} />
             )}
         </div>
     )

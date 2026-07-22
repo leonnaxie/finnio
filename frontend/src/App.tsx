@@ -31,6 +31,7 @@ export interface Transaction {
   amount: number
   date: string
   categoryId: string
+  accountId: string
 }
 
 export interface FinancialProfile {
@@ -115,6 +116,7 @@ function App() {
           amount: t.amount,
           date: t.date,
           categoryId: t.category_id,
+          accountId: t.account_id,
         })));
       }
 
@@ -129,6 +131,20 @@ function App() {
 
     fetchData();
   }, [session]);
+
+  const categoriesWithSpent: Category[] = categories.map(cat => ({
+    ...cat,
+    spent: transactions
+      .filter(tx => tx.categoryId === cat.id)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
+  }));
+
+  const accountsWithBalance: Account[] = accounts.map(acc => ({
+    ...acc,
+    balance: acc.balance + transactions
+      .filter(tx => tx.accountId === acc.id)
+      .reduce((sum, tx) => sum + tx.amount, 0)
+  }))
 
   if (loading) {
     return <div>Loading...</div>;
@@ -145,19 +161,23 @@ function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" />} />
               <Route path="/dashboard" element={<Dashboard
-                  accounts={accounts}
-                  categories={categories}
+                  accounts={accountsWithBalance}
+                  categories={categoriesWithSpent}
                   transactions={transactions}
                   financialProfile={financialProfile}></Dashboard>
               } />
               <Route path="/accounts" element={<Accounts
-                accounts={accounts}
+                accounts={accountsWithBalance}
                 setAccounts={setAccounts}
-                transactions={transactions}></Accounts>} />
-              <Route path="/categories" element={<Categories
+                transactions={transactions}
                 categories={categories}
+                setTransactions={setTransactions}></Accounts>} />
+              <Route path="/categories" element={<Categories
+                categories={categoriesWithSpent}
                 setCategories={setCategories}
-                transactions={transactions}></Categories>} />
+                transactions={transactions}
+                setTransactions={setTransactions}
+                accounts={accountsWithBalance}></Categories>} />
               <Route path="/profile" element={<Profile
                 financialProfile={financialProfile}
                 setFinancialProfile={setFinancialProfile}></Profile>} />
