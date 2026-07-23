@@ -3,6 +3,7 @@ import AccountModal from "./AccountModal"
 import { supabase } from "../lib/supabase"
 import type { Account, Category, Transaction } from "../App"
 import TransactionModal from "./TransactionModal"
+import CSVImport from "./CSV"
 
 interface Props {
     accounts: Account[]
@@ -16,6 +17,7 @@ function Accounts({ accounts, setAccounts, categories, transactions, setTransact
     const [selectedAmount, setSelectedAmount] = useState<Account | null>(accounts[0] ?? null)
     const [showModal, setShowModal] = useState(false)
     const [showTxModal, setShowTxModal] = useState(false)
+    const [showCSVImport, setShowCSVImport] = useState(false)
 
     const handleDelete = async (id: string) => {
         const { error } = await supabase.from('accounts').delete().eq('id', id)
@@ -115,6 +117,12 @@ function Accounts({ accounts, setAccounts, categories, transactions, setTransact
                             className="rounded-xl p-4 border-2 border-dashed border-gray-400 text-gray-400 hover:border-black hover:text-black transition-all text-sm">
                             + Add Account
                         </button>
+
+                        <button
+                            onClick={() => setShowCSVImport(true)}
+                            className="rounded-xl p-4 border-2 border-dashed border-gray-400 text-gray-400 hover:border-blue text-blue-400 hover:border-blue-300 hover:text-blue-300 transition-all text-sm">
+                                📂 Import CSV
+                        </button>
                     </div>
 
                     {/* Account Details */}
@@ -172,6 +180,16 @@ function Accounts({ accounts, setAccounts, categories, transactions, setTransact
                     accounts={accounts}
                     categories={categories}
                     defaultAccountId={selectedAmount?.id} />
+            )}
+
+            {showCSVImport && (
+                <CSVImport
+                    accounts={accounts}
+                    categories={categories}
+                    onImport={(imported) => {
+                        setTransactions(prev => [...prev, ...imported])
+                    }}
+                    onClose={() => setShowCSVImport(false)} />
             )}
         </div>
     )
